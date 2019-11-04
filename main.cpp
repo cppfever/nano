@@ -24,8 +24,12 @@ public:
         ::glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
         ::glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
         //::glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-        ::glfwWindowHint(GLFW_DOUBLEBUFFER, GLFW_TRUE);
-        ::glfwWindowHint(GLFW_SAMPLES, 4);
+//        ::glfwWindowHint(GLFW_DOUBLEBUFFER, GLFW_TRUE);
+//        ::glfwWindowHint(GLFW_SAMPLES, 4);
+//        ::glfwWindowHint(GLFW_RED_BITS, 8);
+//        ::glfwWindowHint(GLFW_GREEN_BITS, 8);
+//        ::glfwWindowHint(GLFW_BLUE_BITS, 8);
+//        ::glfwWindowHint(GLFW_ALPHA_BITS, 8);
 
         mWindow = ::glfwCreateWindow(800, 600, "NanoVG Test", nullptr, nullptr);
         ::glViewport(0, 0, 800, 600);
@@ -40,10 +44,14 @@ public:
         if(::glewInit() != GLEW_OK)
             std::runtime_error("Could not init GLEW.");
 
-        ::glClearColor(1.0, 0, 0, 1.0);
+        ::glClearColor(0.7, 0.7, 0.7, 0.5);
         mVG = ::nvgCreateGL2(NVG_STENCIL_STROKES | NVG_ANTIALIAS | NVG_DEBUG);
-        mImage = ::nvgCreateImage(mVG, "D:\\doc\\cpp\\fm\\nano\\nano\\icons\\icon1.png", 0);
-        //mImage = ::nvgCreateImage(mVG, "//icons//icon1.png", 0);
+
+        mImage = ::nvgCreateImage(mVG, "icons/icon6.png", 0);
+        int width = 0;
+        int height = 0;
+        ::nvgImageSize(mVG, mImage, &width, &height);
+
 
         ::glfwSetWindowUserPointer(mWindow, this);
 
@@ -53,9 +61,8 @@ public:
             ::glfwMakeContextCurrent(glfw_window);
             ::glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT | GL_ACCUM_BUFFER_BIT);
 
-            Window* window = static_cast<Window*>(::glfwGetWindowUserPointer(glfw_window));
-            window->DrawImage(0.0, 0.0, float(width), float(height));
-            ::glfwSwapBuffers(glfw_window);
+            Window* window = Window::GetWindow(glfw_window);
+            window->OnPaint();
         });
 
         ::glfwSetWindowRefreshCallback(mWindow,
@@ -63,11 +70,9 @@ public:
         {
             ::glfwMakeContextCurrent(glfw_window);
             ::glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT | GL_ACCUM_BUFFER_BIT);
-            int left, top, width, height;
-            ::glfwGetWindowFrameSize(glfw_window, &left, &top, &width, &height);
-            Window* window = static_cast<Window*>(::glfwGetWindowUserPointer(glfw_window));
-            window->DrawImage(0.0, 0.0, float(width), float(height));
-            ::glfwSwapBuffers(glfw_window);
+
+            Window* window = Window::GetWindow(glfw_window);
+            window->OnPaint();
         });
 
     }
@@ -80,23 +85,41 @@ public:
         }
     }
 
-    void DrawImage(float x, float y, float width, float height)
+    virtual void OnPaint()
     {
-        NVGpaint paint = ::nvgImagePattern(mVG, x, y, width, height, 0.0, mImage, 1.0);
+        int width, height;
+        ::glfwGetFramebufferSize(mWindow, &width, &height);
+        float ratio = float(width) / float(height);
+
+        ::glViewport(0, 0, width, height);
+
+        ::nvgBeginFrame(mVG, width, height, ratio);
+
+        ::nvgBeginPath(mVG);
+        NVGpaint paint = ::nvgImagePattern(mVG, 30.0f, 30.0f, float(width)-60.0f, float(height)-60.0f, 0.0f, mImage, 0.5f);
+        ::nvgRoundedRect(mVG, 30.0f, 30.0f, float(width)-60.0f, float(height)-60.0f, 30.0f);
         ::nvgFillPaint(mVG, paint);
+        ::nvgFill(mVG);
+
+        ::nvgEndFrame(mVG);
+        ::glfwSwapBuffers(mWindow);
     }
 
 private:
 
-    GLFWwindow* mWindow;
-    NVGcontext* mVG;
-    int mImage;
+    GLFWwindow* mWindow {nullptr};
+    NVGcontext* mVG {nullptr};
+    int mImage {0};
 
     static void ErrorCallback(int error, const char* desc)
     {
         std::cout << "GLFW error:" << desc << std::endl;
     }
 
+    static Window* GetWindow(GLFWwindow* glfw_window)
+    {
+        return static_cast<Window*>(::glfwGetWindowUserPointer(glfw_window));
+    }
 };
 
 int main()
