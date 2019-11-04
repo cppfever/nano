@@ -40,9 +40,35 @@ public:
         if(::glewInit() != GLEW_OK)
             std::runtime_error("Could not init GLEW.");
 
+        ::glClearColor(1.0, 0, 0, 1.0);
         mVG = ::nvgCreateGL2(NVG_STENCIL_STROKES | NVG_ANTIALIAS | NVG_DEBUG);
-        mImage = ::nvgCreateImage(mVG, "icons/icon1.png", 0);
+        mImage = ::nvgCreateImage(mVG, "D:\\doc\\cpp\\fm\\nano\\nano\\icons\\icon1.png", 0);
+        //mImage = ::nvgCreateImage(mVG, "//icons//icon1.png", 0);
 
+        ::glfwSetWindowUserPointer(mWindow, this);
+
+        ::glfwSetWindowSizeCallback(mWindow,
+            [](GLFWwindow *glfw_window, int width, int height)
+        {
+            ::glfwMakeContextCurrent(glfw_window);
+            ::glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT | GL_ACCUM_BUFFER_BIT);
+
+            Window* window = static_cast<Window*>(::glfwGetWindowUserPointer(glfw_window));
+            window->DrawImage(0.0, 0.0, float(width), float(height));
+            ::glfwSwapBuffers(glfw_window);
+        });
+
+        ::glfwSetWindowRefreshCallback(mWindow,
+            [](GLFWwindow *glfw_window)
+        {
+            ::glfwMakeContextCurrent(glfw_window);
+            ::glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT | GL_ACCUM_BUFFER_BIT);
+            int left, top, width, height;
+            ::glfwGetWindowFrameSize(glfw_window, &left, &top, &width, &height);
+            Window* window = static_cast<Window*>(::glfwGetWindowUserPointer(glfw_window));
+            window->DrawImage(0.0, 0.0, float(width), float(height));
+            ::glfwSwapBuffers(glfw_window);
+        });
 
     }
 
@@ -52,6 +78,12 @@ public:
         {
              ::glfwPollEvents();
         }
+    }
+
+    void DrawImage(float x, float y, float width, float height)
+    {
+        NVGpaint paint = ::nvgImagePattern(mVG, x, y, width, height, 0.0, mImage, 1.0);
+        ::nvgFillPaint(mVG, paint);
     }
 
 private:
